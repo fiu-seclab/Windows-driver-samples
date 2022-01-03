@@ -80,6 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>minispy</TargetName>
+    <ApiValidator_DriverPackagePath>\\bear-ad.cs.fiu.edu\homes\Desktop\workspace\Windows-driver-samples\filesys\miniFilter\minispy\filter\x64\Debug</ApiValidator_DriverPackagePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>minispy</TargetName>
