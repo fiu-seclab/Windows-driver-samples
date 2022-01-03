@@ -118,7 +118,7 @@ Return Value:
     NTSTATUS status = STATUS_SUCCESS;
 
     try {
-
+        KdPrint(("Minispy: Starting to load driver...\r\n"));
         //
         // Initialize global data structures.
         //
@@ -227,7 +227,7 @@ Return Value:
              ExDeleteNPagedLookasideList( &MiniSpyData.FreeBufferList );
         }
     }
-
+    KdPrint(("Minispy: Driver loaded successfully!\r\n"));
     return status;
 }
 
@@ -346,6 +346,7 @@ Return Value:
     SpyEmptyOutputBufferList();
     ExDeleteNPagedLookasideList( &MiniSpyData.FreeBufferList );
 
+    KdPrint(("Minispy: Driver Unloaded successfully\r\n"));
     return STATUS_SUCCESS;
 }
 
