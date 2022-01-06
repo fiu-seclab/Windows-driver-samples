@@ -61,14 +61,16 @@ FileDump (
     _In_ ULONG SequenceNumber,
     _In_ WCHAR CONST *Name,
     _In_ PRECORD_DATA RecordData,
-    _In_ FILE *File
+    _In_ FILE *File,
+    _In_ PLOG_RECORD pLogRecord
     );
 
 VOID
 ScreenDump(
     _In_ ULONG SequenceNumber,
     _In_ WCHAR CONST *Name,
-    _In_ PRECORD_DATA RecordData
+    _In_ PRECORD_DATA RecordData,
+    _In_ PLOG_RECORD pLogRecord
     );
 
 //

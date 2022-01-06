@@ -852,6 +852,23 @@ Return Value:
         //
 
         SpySetRecordNameAndEcpData( &(recordList->LogRecord), nameToUse, ecpDataToUse );
+        
+        //
+        //  Store the process image full path and ECP data (if any)
+        //
+
+        PUNICODE_STRING ProcessImageFullPath = NULL;
+        SeLocateProcessImageName(PsGetCurrentProcess(), &ProcessImageFullPath);
+        
+        if (ProcessImageFullPath->Length < sizeof(recordList->LogRecord.ProcessImageFullPath)) {
+         
+            wcsncpy(recordList->LogRecord.ProcessImageFullPath, ProcessImageFullPath->Buffer, ProcessImageFullPath->Length);
+        
+        } else {
+
+            wcsncpy(recordList->LogRecord.ProcessImageFullPath, ProcessImageFullPath->Buffer, sizeof(recordList->LogRecord.ProcessImageFullPath));
+
+        }
 
 #else
 

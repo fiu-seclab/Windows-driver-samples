@@ -238,7 +238,9 @@ Return Value:
 
                 ScreenDump( pLogRecord->SequenceNumber,
                             pLogRecord->Name,
-                            pRecordData );
+                            pRecordData,
+                            pLogRecord);
+
             }
 
             if (context->LogToFile) {
@@ -246,7 +248,8 @@ Return Value:
                 FileDump( pLogRecord->SequenceNumber,
                           pLogRecord->Name,
                           pRecordData,
-                          context->OutputFile );
+                          context->OutputFile, 
+                          pLogRecord );
             }
 
             //
@@ -274,14 +277,14 @@ Return Value:
 
                 if (context->LogToScreen) {
 
-                    printf( "M:  %08X Exceeded Mamimum Allowed Memory Buffers\n",
+                    printf( "M:  %08X Exceeded Maxmimum Allowed Memory Buffers\n",
                             pLogRecord->SequenceNumber );
                 }
 
                 if (context->LogToFile) {
 
                     fprintf( context->OutputFile,
-                             "M:\t0x%08X\tExceeded Mamimum Allowed Memory Buffers\n",
+                             "M:\t0x%08X\tExceeded Maxmimum Allowed Memory Buffers\n",
                              pLogRecord->SequenceNumber );
                 }
             }
@@ -903,7 +906,8 @@ FileDump (
     _In_ ULONG SequenceNumber,
     _In_ WCHAR CONST *Name,
     _In_ PRECORD_DATA RecordData,
-    _In_ FILE *File
+    _In_ FILE *File,
+    _In_ PLOG_RECORD pLogRecord
     )
 /*++
 Routine Description:
@@ -935,17 +939,28 @@ Return Value:
     static BOOLEAN didFileHeader = FALSE;
 
     //
+    //  Excluding minispy log data
+    //
+
+    if (GetCurrentProcessId() == RecordData->ProcessId) {
+
+        return;
+
+    }
+
+
+    //
     // Is this an Irp or a FastIo?
     //
 
     if (!didFileHeader) {
 
 #if defined(_WIN64)
-        fprintf( File, "Opr\t  SeqNum  \t PreOp Time \tPostOp Time \t Process.Thrd\t          Major Operation          \t          Minor Operation          \t   IrpFlags    \t      DevObj      \t     FileObj      \t    Transactn     \t    status:inform            \t      Arg 1       \t      Arg 2       \t      Arg 3       \t      Arg 4       \t      Arg 5       \t  Arg 6   \tName\n");
-        fprintf( File, "---\t----------\t------------\t------------\t-------------\t-----------------------------------\t-----------------------------------\t---------------\t------------------\t------------------\t------------------\t-----------------------------\t------------------\t------------------\t------------------\t------------------\t------------------\t----------\t--------------------------------------------------\n");
+        fprintf( File, "Opr\t  SeqNum  \t PreOp Time \tPostOp Time \t Process.Thrd\t          Major Operation          \t          Minor Operation          \t   IrpFlags    \t      DevObj      \t     FileObj      \t    Transactn     \t    status:inform            \t      Arg 1       \t      Arg 2       \t      Arg 3       \t      Arg 4       \t      Arg 5       \t  Arg 6   \tFile Name  |  Process Name  |  Process Image Full Path\n");
+        fprintf( File, "---\t----------\t------------\t------------\t-------------\t-----------------------------------\t-----------------------------------\t---------------\t------------------\t------------------\t------------------\t-----------------------------\t------------------\t------------------\t------------------\t------------------\t------------------\t----------\t------------------------------------------------------\n");
 #else
-        fprintf( File, "Opr\t  SeqNum  \t PreOp Time \tPostOp Time \t Process.Thrd\t          Major Operation          \t          Minor Operation          \t   IrpFlags    \t  DevObj  \t FileObj  \tTransactn \t    status:inform    \t  Arg 1   \t  Arg 2   \t  Arg 3   \t  Arg 4   \t  Arg 5   \t  Arg 6   \tName\n");
-        fprintf( File, "---\t----------\t------------\t------------\t-------------\t-----------------------------------\t-----------------------------------\t---------------\t----------\t----------\t----------\t---------------------\t----------\t----------\t----------\t----------\t----------\t----------\t--------------------------------------------------\n");
+        fprintf( File, "Opr\t  SeqNum  \t PreOp Time \tPostOp Time \t Process.Thrd\t          Major Operation          \t          Minor Operation          \t   IrpFlags    \t  DevObj  \t FileObj  \tTransactn \t    status:inform    \t  Arg 1   \t  Arg 2   \t  Arg 3   \t  Arg 4   \t  Arg 5   \t  Arg 6   \tFile Name  |  Process Name  |  Process Image Full Path\n");
+        fprintf( File, "---\t----------\t------------\t------------\t-------------\t-----------------------------------\t-----------------------------------\t---------------\t----------\t----------\t----------\t---------------------\t----------\t----------\t----------\t----------\t----------\t----------\t------------------------------------------------------\n");
 #endif
         didFileHeader = TRUE;
     }
@@ -1043,6 +1058,7 @@ Return Value:
     fprintf( File, "\t0x%08I64x", RecordData->Arg6.QuadPart );
 
     fprintf( File, "\t%S", Name );
+    fprintf( File, "\t%S", pLogRecord->ProcessImageFullPath);
     fprintf( File, "\n" );
 }
 
@@ -1051,7 +1067,8 @@ VOID
 ScreenDump(
     _In_ ULONG SequenceNumber,
     _In_ WCHAR CONST *Name,
-    _In_ PRECORD_DATA RecordData
+    _In_ PRECORD_DATA RecordData,
+    _In_ PLOG_RECORD pLogRecord
     )
 /*++
 Routine Description:
@@ -1078,6 +1095,18 @@ Return Value:
     CHAR time[TIME_BUFFER_LENGTH];
     static BOOLEAN didScreenHeader = FALSE;
 
+    
+    //
+    //  Excluding minispy log data
+    //
+
+    if (GetCurrentProcessId() == RecordData->ProcessId) {
+
+        return;
+
+    }
+
+
     //
     // Is this an Irp or a FastIo?
     //
@@ -1085,11 +1114,11 @@ Return Value:
     if (!didScreenHeader) {
 
 #if defined(_WIN64)
-        printf("Opr  SeqNum   PreOp Time  PostOp Time   Process.Thrd      Major/Minor Operation          IrpFlags          DevObj           FileObj          Transact       status:inform                               Arguments                                                                             Name\n");
-        printf("--- -------- ------------ ------------ ------------- ----------------------------------- ------------- ---------------- ---------------- ---------------- ------------------------- --------------------------------------------------------------------------------------------------------- -----------------------------------\n");
+        printf("Opr  SeqNum   PreOp Time  PostOp Time   Process.Thrd      Major/Minor Operation          IrpFlags          DevObj           FileObj          Transact       status:inform                               Arguments                                                                             File Name  |  Process Name  |  Process Image Full Pathh\n");
+        printf("--- -------- ------------ ------------ ------------- ----------------------------------- ------------- ---------------- ---------------- ---------------- ------------------------- --------------------------------------------------------------------------------------------------------- -------------------------------------------------------\n");
 #else
-        printf("Opr  SeqNum   PreOp Time  PostOp Time   Process.Thrd      Major/Minor Operation          IrpFlags      DevObj   FileObj  Transact   status:inform                               Arguments                             Name\n");
-        printf("--- -------- ------------ ------------ ------------- ----------------------------------- ------------- -------- -------- -------- ----------------- ----------------------------------------------------------------- -----------------------------------\n");
+        printf("Opr  SeqNum   PreOp Time  PostOp Time   Process.Thrd      Major/Minor Operation          IrpFlags      DevObj   FileObj  Transact   status:inform                               Arguments                             File Name  |  Process Name  |  Process Image Full Path\n");
+        printf("--- -------- ------------ ------------ ------------- ----------------------------------- ------------- -------- -------- -------- ----------------- ----------------------------------------------------------------- ------------------------------------------------------\n");
 #endif
         didScreenHeader = TRUE;
     }
@@ -1183,7 +1212,8 @@ Return Value:
             RecordData->Arg5,
             RecordData->Arg6.QuadPart );
 
-    printf( "%S", Name );
+    printf( "%S\t", Name );
+    printf("%S\t", pLogRecord->ProcessImageFullPath);
     printf( "\n" );
     PrintIrpCode( RecordData->CallbackMajorId,
                   RecordData->CallbackMinorId,

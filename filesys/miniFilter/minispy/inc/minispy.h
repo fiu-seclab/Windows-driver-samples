@@ -80,7 +80,7 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 //  The maximum size of a record that can be passed from the filter
 //
 
-#define RECORD_SIZE     1024
+#define RECORD_SIZE     2048
 
 //
 //  This defines the type of record buffer this is along with certain flags.
@@ -150,6 +150,8 @@ typedef struct _LOG_RECORD {
     ULONG Reserved;         // For alignment on IA64
 
     RECORD_DATA Data;
+    WCHAR ProcessImageFullPath[400];//  This is a null terminated string and holds a process image full path
+    WCHAR ProcessName[100]; //  This is a null terminated string and holds a process name which is come from PCB
     WCHAR Name[];           //  This is a null terminated string
 
 } LOG_RECORD, *PLOG_RECORD;
