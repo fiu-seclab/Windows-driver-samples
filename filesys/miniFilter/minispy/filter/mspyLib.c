@@ -1109,7 +1109,7 @@ Return Value:
     recordData->Arg5 = Data->Iopb->Parameters.Others.Argument5;
     recordData->Arg6.QuadPart = Data->Iopb->Parameters.Others.Argument6.QuadPart;
 
-    KeQuerySystemTime( &recordData->OriginatingTime );
+    KeQuerySystemTimePrecise( &recordData->OriginatingTime );   // Change this to KeQuerySystemTime() to improve speed and performance
 }
 
 
@@ -1144,7 +1144,7 @@ Return Value:
 
     recordData->Status = Data->IoStatus.Status;
     recordData->Information = Data->IoStatus.Information;
-    KeQuerySystemTime( &recordData->CompletionTime );
+    KeQuerySystemTimePrecise(&recordData->CompletionTime); // Change this to KeQuerySystemTime() to improve speed and performance
 }
 
 
@@ -1198,7 +1198,7 @@ Return Value:
     recordData->ProcessId       = (FILE_ID)PsGetCurrentProcessId();
     recordData->ThreadId        = (FILE_ID)PsGetCurrentThreadId();
 
-    KeQuerySystemTime( &recordData->OriginatingTime );
+    KeQuerySystemTimePrecise( &recordData->OriginatingTime );   // Change this to KeQuerySystemTime() to improve speed and performance
 }
 
 
