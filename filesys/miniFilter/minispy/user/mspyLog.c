@@ -26,7 +26,7 @@ _Analysis_mode_(_Analysis_code_type_user_code_)
 #include <winioctl.h>
 #include "mspyLog.h"
 
-#define TIME_BUFFER_LENGTH 20
+#define TIME_BUFFER_LENGTH 32
 #define TIME_ERROR         "time error"
 
 #define POLL_INTERVAL   200     // 200 milliseconds
@@ -827,11 +827,11 @@ Return Value:
 
         if (irpMinorString) {
 
-            fprintf(OutputFile, "\t%-35s\t%-35s", irpMajorString, irpMinorString);
+            fprintf(OutputFile, "%s,%s,", irpMajorString, irpMinorString);
 
         } else {
 
-            fprintf(OutputFile, "\t%-35s\t                                   ", irpMajorString);
+            fprintf(OutputFile, "%s,,", irpMajorString);
         }
 
     } else {
@@ -891,7 +891,10 @@ Return Value:
 
     returnLength = sprintf_s( Buffer,
                             BufferLength,
-                            "%02d:%02d:%02d:%03d",
+                            "%04d/%02d/%02d-%02d:%02d:%02d:%03d",
+                            SystemTime->wYear,
+                            SystemTime->wMonth,
+                            SystemTime->wDay,
                             SystemTime->wHour,
                             SystemTime->wMinute,
                             SystemTime->wSecond,
@@ -938,16 +941,7 @@ Return Value:
     CHAR time[TIME_BUFFER_LENGTH];
     static BOOLEAN didFileHeader = FALSE;
 
-    //
-    //  Excluding minispy log data
-    //
-
-    if (GetCurrentProcessId() == RecordData->ProcessId) {
-
-        return;
-
-    }
-
+    // @FIXME, TODO: Fina a way to exclude minispy self write/read log to output
 
     //
     // Is this an Irp or a FastIo?
@@ -956,11 +950,9 @@ Return Value:
     if (!didFileHeader) {
 
 #if defined(_WIN64)
-        fprintf( File, "Opr\t  SeqNum  \t PreOp Time \tPostOp Time \t Process.Thrd\t          Major Operation          \t          Minor Operation          \t   IrpFlags    \t      DevObj      \t     FileObj      \t    Transactn     \t    status:inform            \t      Arg 1       \t      Arg 2       \t      Arg 3       \t      Arg 4       \t      Arg 5       \t  Arg 6   \tFile Name  |  Process Name  |  Process Image Full Path\n");
-        fprintf( File, "---\t----------\t------------\t------------\t-------------\t-----------------------------------\t-----------------------------------\t---------------\t------------------\t------------------\t------------------\t-----------------------------\t------------------\t------------------\t------------------\t------------------\t------------------\t----------\t------------------------------------------------------\n");
+        fprintf( File, "Operation,Sequence Number,PreOperation DateTime,PostOperation DateTime,Process ID,Thread ID,Major Operation,Minor Operation,Irp Flags,Devive Object,File Object,Transaction,status:inform,Arg 1,Arg 2,Arg 3,Arg 4,Arg 5,Arg 6,File Name,Process Image Full Path\n");
 #else
-        fprintf( File, "Opr\t  SeqNum  \t PreOp Time \tPostOp Time \t Process.Thrd\t          Major Operation          \t          Minor Operation          \t   IrpFlags    \t  DevObj  \t FileObj  \tTransactn \t    status:inform    \t  Arg 1   \t  Arg 2   \t  Arg 3   \t  Arg 4   \t  Arg 5   \t  Arg 6   \tFile Name  |  Process Name  |  Process Image Full Path\n");
-        fprintf( File, "---\t----------\t------------\t------------\t-------------\t-----------------------------------\t-----------------------------------\t---------------\t----------\t----------\t----------\t---------------------\t----------\t----------\t----------\t----------\t----------\t----------\t------------------------------------------------------\n");
+        fprintf(File, "Operation,Sequence Number,PreOperation DateTime,PostOperation DateTime,Process ID,Thread ID,Major Operation,Minor Operation,Irp Flags,Devive Object,File Object,Transaction,status:inform,Arg 1,Arg 2,Arg 3,Arg 4,Arg 5,Arg 6,File Name,Process Image Full Path\n");
 #endif
         didFileHeader = TRUE;
     }
@@ -971,26 +963,26 @@ Return Value:
 
     if (RecordData->Flags & FLT_CALLBACK_DATA_IRP_OPERATION) {
 
-        fprintf( File, "IRP");
+        fprintf( File, "IRP,");
 
     } else if (RecordData->Flags & FLT_CALLBACK_DATA_FAST_IO_OPERATION) {
 
-        fprintf( File, "FIO");
+        fprintf( File, "FIO,");
 
     } else if (RecordData->Flags & FLT_CALLBACK_DATA_FS_FILTER_OPERATION) {
 
-        fprintf( File, "FSF");
+        fprintf( File, "FSF,");
 
     } else {
 
-        fprintf( File, "ERR");
+        fprintf( File, "ERR,");
     }
 
     //
     //  Print the sequence number
     //
 
-    fprintf( File, "\t0x%08X", SequenceNumber );
+    fprintf( File, "0x%X,", SequenceNumber );
 
     //
     // Convert originating time
@@ -1003,11 +995,11 @@ Return Value:
 
     if (FormatSystemTime( &systemTime, time, TIME_BUFFER_LENGTH )) {
 
-        fprintf( File, "\t%-12s", time );
+        fprintf( File, "%s,", time );
 
     } else {
 
-        fprintf( File, "\t%-12s", TIME_ERROR );
+        fprintf( File, "%s,", TIME_ERROR );
     }
 
     //
@@ -1021,14 +1013,14 @@ Return Value:
 
     if (FormatSystemTime( &systemTime, time, TIME_BUFFER_LENGTH )) {
 
-        fprintf( File, "\t%-12s", time );
+        fprintf( File, "%s,", time );
 
     } else {
 
-        fprintf( File, "\t%-12s", TIME_ERROR );
+        fprintf( File, "%s,", TIME_ERROR );
     }
 
-    fprintf(File, "\t%8Ix.%-4Ix ", RecordData->ProcessId, RecordData->ThreadId);
+    fprintf(File, "%IX,%IX,", RecordData->ProcessId, RecordData->ThreadId);
 
     PrintIrpCode( RecordData->CallbackMajorId,
                   RecordData->CallbackMinorId,
@@ -1039,26 +1031,26 @@ Return Value:
     // Interpret set IrpFlags
     //
 
-    fprintf( File, "\t0x%08lx ", RecordData->IrpFlags );
+    fprintf( File, "0x%lX|", RecordData->IrpFlags );
     fprintf( File, "%s", (RecordData->IrpFlags & IRP_NOCACHE) ? "N":"-" );
     fprintf( File, "%s", (RecordData->IrpFlags & IRP_PAGING_IO) ? "P":"-" );
     fprintf( File, "%s", (RecordData->IrpFlags & IRP_SYNCHRONOUS_API) ? "S":"-" );
-    fprintf( File, "%s", (RecordData->IrpFlags & IRP_SYNCHRONOUS_PAGING_IO) ? "Y":"-" );
+    fprintf( File, "%s,", (RecordData->IrpFlags & IRP_SYNCHRONOUS_PAGING_IO) ? "Y":"-" );
 
-    fprintf( File, "\t0x%08p", (PVOID) RecordData->DeviceObject );
-    fprintf( File, "\t0x%08p", (PVOID) RecordData->FileObject );
-    fprintf( File, "\t0x%08p", (PVOID) RecordData->Transaction );
-    fprintf( File, "\t0x%08lx:0x%p", RecordData->Status, (PVOID)RecordData->Information );
+    fprintf( File, "0x%p,", (PVOID) RecordData->DeviceObject );
+    fprintf( File, "0x%p,", (PVOID) RecordData->FileObject );
+    fprintf( File, "0x%p,", (PVOID) RecordData->Transaction );
+    fprintf( File, "0x%lX:0x%p,", RecordData->Status, (PVOID)RecordData->Information );
 
-    fprintf( File, "\t0x%p", RecordData->Arg1 );
-    fprintf( File, "\t0x%p", RecordData->Arg2 );
-    fprintf( File, "\t0x%p", RecordData->Arg3 );
-    fprintf( File, "\t0x%p", RecordData->Arg4 );
-    fprintf( File, "\t0x%p", RecordData->Arg5 );
-    fprintf( File, "\t0x%08I64x", RecordData->Arg6.QuadPart );
+    fprintf( File, "0x%p,", RecordData->Arg1 );
+    fprintf( File, "0x%p,", RecordData->Arg2 );
+    fprintf( File, "0x%p,", RecordData->Arg3 );
+    fprintf( File, "0x%p,", RecordData->Arg4 );
+    fprintf( File, "0x%p,", RecordData->Arg5 );
+    fprintf( File, "0x%IX,", RecordData->Arg6.QuadPart );
 
-    fprintf( File, "\t%S", Name );
-    fprintf( File, "\t%S", pLogRecord->ProcessImageFullPath);
+    fprintf( File, "%S,", Name );
+    fprintf( File, "%S,", pLogRecord->ProcessImageFullPath);
     fprintf( File, "\n" );
 }
 
@@ -1095,17 +1087,8 @@ Return Value:
     CHAR time[TIME_BUFFER_LENGTH];
     static BOOLEAN didScreenHeader = FALSE;
 
-    
-    //
-    //  Excluding minispy log data
-    //
 
-    if (GetCurrentProcessId() == RecordData->ProcessId) {
-
-        return;
-
-    }
-
+    // @FIXME, TODO: Fina a way to exclude minispy self write/read log to output
 
     //
     // Is this an Irp or a FastIo?
