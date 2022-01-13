@@ -102,6 +102,7 @@ typedef struct _RECORD_DATA {
 
     LARGE_INTEGER OriginatingTime;
     LARGE_INTEGER CompletionTime;
+    LARGE_INTEGER DurationTime;
 
     FILE_ID DeviceObject;
     FILE_ID FileObject;

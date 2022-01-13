@@ -1110,6 +1110,8 @@ Return Value:
     recordData->Arg6.QuadPart = Data->Iopb->Parameters.Others.Argument6.QuadPart;
 
     KeQuerySystemTimePrecise( &recordData->OriginatingTime );   // Change this to KeQuerySystemTime() to improve speed and performance
+
+    recordData->DurationTime = KeQueryPerformanceCounter(NULL);
 }
 
 
@@ -1145,6 +1147,15 @@ Return Value:
     recordData->Status = Data->IoStatus.Status;
     recordData->Information = Data->IoStatus.Information;
     KeQuerySystemTimePrecise(&recordData->CompletionTime); // Change this to KeQuerySystemTime() to improve speed and performance
+
+    //
+    // Measuring duration of operation
+    // DurationTime struct member already have the start tick count of operation
+    // @FIXME, TODO Change this part of the code in order to the actual time in second unit rather than performance counter directly
+    //LARGE_INTEGER TimerFrequency;
+    recordData->DurationTime.QuadPart = KeQueryPerformanceCounter(NULL).QuadPart - recordData->DurationTime.QuadPart;
+    //recordData->DurationTime.QuadPart = (KeQueryPerformanceCounter(&TimerFrequency).QuadPart - recordData->DurationTime.QuadPart)* 1000000;
+    //recordData->DurationTime.QuadPart /= TimerFrequency.QuadPart;
 }
 
 
@@ -1199,6 +1210,8 @@ Return Value:
     recordData->ThreadId        = (FILE_ID)PsGetCurrentThreadId();
 
     KeQuerySystemTimePrecise( &recordData->OriginatingTime );   // Change this to KeQuerySystemTime() to improve speed and performance
+
+    recordData->DurationTime = KeQueryPerformanceCounter(NULL);
 }
 
 

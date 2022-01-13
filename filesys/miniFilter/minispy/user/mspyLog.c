@@ -950,7 +950,7 @@ Return Value:
     if (!didFileHeader) {
 
 #if defined(_WIN64)
-        fprintf( File, "Operation,Sequence Number,PreOperation DateTime,PostOperation DateTime,Process ID,Thread ID,Major Operation,Minor Operation,Irp Flags,Devive Object,File Object,Transaction,status:inform,Arg 1,Arg 2,Arg 3,Arg 4,Arg 5,Arg 6,File Name,Process Image Full Path\n");
+        fprintf( File, "Operation,Sequence Number,PreOperation DateTime,PostOperation DateTime,Duration Time,Process ID,Thread ID,Major Operation,Minor Operation,Irp Flags,Devive Object,File Object,Transaction,status:inform,Arg 1,Arg 2,Arg 3,Arg 4,Arg 5,Arg 6,File Name,Process Image Full Path\n");
 #else
         fprintf(File, "Operation,Sequence Number,PreOperation DateTime,PostOperation DateTime,Process ID,Thread ID,Major Operation,Minor Operation,Irp Flags,Devive Object,File Object,Transaction,status:inform,Arg 1,Arg 2,Arg 3,Arg 4,Arg 5,Arg 6,File Name,Process Image Full Path\n");
 #endif
@@ -1020,7 +1020,9 @@ Return Value:
         fprintf( File, "%s,", TIME_ERROR );
     }
 
-    fprintf(File, "%IX,%IX,", RecordData->ProcessId, RecordData->ThreadId);
+    fprintf(File, "0x%llX,", RecordData->DurationTime.QuadPart);
+
+    fprintf(File, "0x%IX,0x%IX,", RecordData->ProcessId, RecordData->ThreadId);
 
     PrintIrpCode( RecordData->CallbackMajorId,
                   RecordData->CallbackMinorId,
