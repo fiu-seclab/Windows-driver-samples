@@ -127,3 +127,15 @@ REMEMBER! Loading manually do not provide all features of this driver. Best way 
    Since minispy.sys provides many details of file system filter activity which is very useful for adversary, any user-land application without Admin priviledge can not connect to minispy kernel module. Because of this you may need to start this application by Admin privildge.
 
 6. Any other Issue? Send an email for project corresponder
+
+
+----------
+Challenges:
+# 1.Retrieving Process Name
+In minifilter project we may need to get process name per IRPs. In order to acheieve this goal, we found 3 approach for this feature:
+
+1. *An undocumented solution with* `Zwqueryinformation()` *kernel function method*: In this solution we may use this function with `ProcessImageInformation` flag as input. Challenges: As you know, there is no direct way to call `Zwqueryinformation()` in your driver source code! We may need to save string of `"Zwqueryinformation"` in our source code. Then we can use `MmGetSystemRoutineAddress()` to find routine address of `Zwqueryinformation()`. Now, we have an address that can be used as pointer for function. Now we access to run this function. Benefits: Just a few line can help us to to determine the process name.
+
+2. *A documented solution with* `ZwQuerySystemInformation()` *kernel function method by externing this method*: In this solution we can use this method simply by `SystemProcessInformation` flag to get a linked list of processes. This function return a SYSTEM_PROCESSES:Linked list structure. Drawbacks: Since we have a linked list, we should travevers this list in order to match PID then read process name. One way we can use to reduce the search time is to make hash table for fast matching PID and process name. However keeping update this table may need significant amount of development time. On the other hand, we should have a good trigger in order to update this table in the correct time. For example, there is some evasion in `PsSetCreateProcessNotifyRoutine()` as a trigger for this task.
+
+3. *Using `SeLocateProcessImageName()` In order to get process name*: This is method does not return process name. It returns process image name plus its full where it is originally loaded. It more likely for a process that have a name similar to process image name.
